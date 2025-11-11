@@ -45,7 +45,8 @@ object P2PManager {
                     setP2PStatus(P2PStatus.CONNECTING)
                 } else if (line.contains("weak password detected")) {
                     setP2PStatus(P2PStatus.ERROR, "密钥强度过低")
-//                    Toast.makeText(context, "密钥强度过低", Toast.LENGTH_SHORT).show()
+                } else if (line.contains("no usable NAT types with peer")) {
+                    setP2PStatus(P2PStatus.ERROR, "穿透失败")
                 }
             }
         }
@@ -90,7 +91,6 @@ object P2PManager {
     // 开始P2P连接
     fun start(secretKey: String) {
         if (secretKey.isEmpty()) {
-//            Toast.makeText(context, "请先输入密钥", Toast.LENGTH_SHORT).show()
             setP2PStatus(P2PStatus.ERROR, "请先输入密钥")
             return
         }

@@ -36,10 +36,6 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         btnScan.setOnClickListener {
-//            finish()
-//            val optionsCompat =
-//                ActivityOptionsCompat.makeCustomAnimation(this, R.anim.`in`, R.anim.out)
-
             val intent = Intent(this, QRCodeScanActivity::class.java)
             ActivityCompat.startActivityForResult(
                 this,

@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnRefresh: Button
     private var flag: Boolean = true;
 
-    private var isStatusExpanded = true // 默认展开状态
+    private var isStatusExpanded = true
 
     // 状态栏高度（用于动画）
     private var statusHeaderHeight = 0
@@ -184,7 +184,7 @@ class MainActivity : AppCompatActivity() {
         webView.settings.loadWithOverviewMode = true // 缩放页面使其适合 WebView 的宽度
         // 启用缓存
         webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
-// 设置 WebChromeClient 处理新窗口
+        // 设置 WebChromeClient 处理新窗口
         webView.webChromeClient = object : WebChromeClient() {
             override fun onCreateWindow(
                 view: WebView?,
@@ -260,13 +260,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-
-        // 保存重要状态
-//        // 保存 WebView 状态
-//        val webViewState = Bundle()
-//        webView.saveState(webViewState)
-//        outState.putBundle(KEY_WEBVIEW_STATE, webViewState)
-//        outState.putString(KEY_CURRENT_URL, webView.url)
         outState.putBoolean("isStatusExpanded", isStatusExpanded)
         outState.putBoolean("flag", flag)
     }
