@@ -34,6 +34,35 @@
         android:hint="请输入迪加API凭据，没有请留空"
         android:inputType="text"
         android:layout_marginBottom="16dp" />
+
+    <RadioGroup
+        android:id="@+id/rgTunnelMode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rbTunnelLegacy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:checked="true"
+            android:text="旧版兼容模式" />
+
+        <RadioButton
+            android:id="@+id/rbTunnelNc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="nc直连8988(性能最好)" />
+
+        <RadioButton
+            android:id="@+id/rbTunnelLink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="新版转发" />
+
+    </RadioGroup>
+
     <Button
         android:id="@+id/btnSave"
         android:layout_width="match_parent"

@@ -28,7 +28,7 @@ class Gonc {
         executableDir = context.applicationContext.filesDir
     }
 
-    fun start(context: Context, code: String) {
+    fun start(context: Context, code: String, tunnelMode: P2PManager.TunnelMode) {
         stop()
         try {
             while (isRunning) {
@@ -43,7 +43,7 @@ class Gonc {
 
         Thread {
             try {
-                run(context, code)
+                run(context, code, tunnelMode)
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
@@ -63,12 +63,12 @@ class Gonc {
         }
     }
 
-    private fun run(context: Context, code: String) {
-        val goncPath = executableDir!!.absolutePath + "/gonc"
+    private fun run(context: Context, code: String, tunnelMode: P2PManager.TunnelMode) {
+        val goncPath = executableDir!!.absolutePath + "/gonc_251"
         if (!Rds.initgonc(context, goncPath)) {
             msg("gonc初始化失败")
         } else {
-            executeCommandAndDisplayOutput(goncPath, code)
+            executeCommandAndDisplayOutput(goncPath, code, tunnelMode)
         }
     }
 
@@ -80,20 +80,17 @@ class Gonc {
         callBack?.out(line)
     }
 
-    private fun executeCommandAndDisplayOutput(goncPath: String, passKey: String) {
+    private fun executeCommandAndDisplayOutput(
+        goncPath: String,
+        passKey: String,
+        tunnelMode: P2PManager.TunnelMode
+    ) {
         var inputStream: InputStream? = null
         var reader: BufferedReader? = null
         var flag = true
 
         try {
-            val processBuilder = ProcessBuilder(
-                goncPath,
-                "-p2p",
-                passKey,
-                "-socks5local-port",
-                P2PManager.PORT,
-                "-mqtt-hello"
-            )
+            val processBuilder = ProcessBuilder(commandArgs(goncPath, passKey, tunnelMode))
             processBuilder.redirectErrorStream(true)
             process = processBuilder.start()
 
@@ -126,5 +123,50 @@ class Gonc {
             } catch (_: IOException) {
             }
         }
+    }
+
+    private fun commandArgs(
+        goncPath: String,
+        passKey: String,
+        tunnelMode: P2PManager.TunnelMode
+    ): List<String> {
+        if (tunnelMode == P2PManager.TunnelMode.LEGACY) {
+            return listOf(
+                goncPath,
+                "-p2p",
+                passKey,
+                "-socks5local-port",
+                P2PManager.PORT,
+                "-mqtt-hello"
+            )
+        }
+
+        if (tunnelMode == P2PManager.TunnelMode.LINK) {
+            return listOf(
+                goncPath,
+                "-p2p",
+                passKey,
+                "-ss",
+                "-mqtt-hello",
+                "-call",
+                ":mux",
+                "-link",
+                P2PManager.PORT + ";none",
+                "-keep-open"
+            )
+        }
+
+        return listOf(
+            goncPath,
+            "-p2p",
+            passKey,
+            "-ss",
+            "-mqtt-hello",
+            "-call",
+            ":" + tunnelMode.value,
+            "-mux-l",
+            P2PManager.DIP_HTTP_PORT,
+            "-keep-open"
+        )
     }
 }

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -14,6 +15,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var etSecretKey: EditText
     private lateinit var etAuth: EditText
+    private lateinit var rgTunnelMode: RadioGroup
     private lateinit var btnSave: Button
     private lateinit var btnScan: Button
 
@@ -28,6 +30,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun initViews() {
         etSecretKey = findViewById(R.id.etSecretKey)
         etAuth = findViewById(R.id.etAuth)
+        rgTunnelMode = findViewById(R.id.rgTunnelMode)
         btnSave = findViewById(R.id.btnSave)
         btnScan = findViewById(R.id.btnScan)
 
@@ -48,6 +51,13 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadSavedKey() {
         etSecretKey.setText(P2PManager.getSecretKey())
         etAuth.setText(P2PManager.getAuth())
+        rgTunnelMode.check(
+            when (P2PManager.getTunnelMode()) {
+                P2PManager.TunnelMode.LEGACY -> R.id.rbTunnelLegacy
+                P2PManager.TunnelMode.LINK -> R.id.rbTunnelLink
+                else -> R.id.rbTunnelNc
+            }
+        )
     }
 
     private fun saveSecretKey() {
@@ -59,7 +69,13 @@ class SettingsActivity : AppCompatActivity() {
             return
         }
 
-        P2PManager.saveSecretKey(secretKey, auth)
+        val tunnelMode = when (rgTunnelMode.checkedRadioButtonId) {
+            R.id.rbTunnelLegacy -> P2PManager.TunnelMode.LEGACY
+            R.id.rbTunnelLink -> P2PManager.TunnelMode.LINK
+            R.id.rbTunnelNc -> P2PManager.TunnelMode.NC
+            else -> P2PManager.TunnelMode.LEGACY
+        }
+        P2PManager.saveSettings(secretKey, auth, tunnelMode)
         finish()
     }
 

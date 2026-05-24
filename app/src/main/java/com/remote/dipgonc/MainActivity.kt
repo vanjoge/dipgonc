@@ -44,10 +44,6 @@ class MainActivity : AppCompatActivity() {
     // 状态栏高度（用于动画）
     private var statusHeaderHeight = 0
 
-    // 要加载的网页URL（可配置）
-    private val webUrl = "http://127.0.0.1-8988.gonc.cc:" + P2PManager.PORT
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -235,14 +231,18 @@ class MainActivity : AppCompatActivity() {
             }
             if (flag && status == P2PManager.P2PStatus.CONNECTED) {
                 Toast.makeText(this, "连接成功，开始加载首页", Toast.LENGTH_SHORT).show()
-                webView.loadUrl(webUrl + "?auth=" + P2PManager.getAuth())
-                flag = false
+                loadHomePage()
             }
             tvP2PStatus.text = statusText
             tvP2PStatus.setTextColor(Color.parseColor(statusColor))
             tvStatusSummary.text = "连接状态: $statusText"
             tvStatusSummary.setTextColor(Color.parseColor(statusColor))
         }
+    }
+
+    private fun loadHomePage() {
+        webView.loadUrl(P2PManager.getWebUrl() + "?auth=" + P2PManager.getAuth())
+        flag = false
     }
 
     override fun onResume() {
