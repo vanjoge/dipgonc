@@ -6,11 +6,13 @@ import android.app.Dialog
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.Message
 import android.view.View
 import android.view.ViewTreeObserver
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -268,6 +270,7 @@ class MainActivity : AppCompatActivity() {
         // 创建对话框显示新页面
         val dialog = Dialog(this, android.R.style.Theme_NoTitleBar_Fullscreen)
         val newWebView = WebView(this)
+        var dialogShown = false
 
         // 配置新WebView（同上）
         newWebView.settings.javaScriptEnabled = true
@@ -276,6 +279,29 @@ class MainActivity : AppCompatActivity() {
         newWebView.settings.javaScriptCanOpenWindowsAutomatically = true
 
         newWebView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: WebResourceRequest?
+            ): Boolean {
+                val url = request?.url?.toString() ?: return false
+                return handleVideoUrl(url, dialog)
+            }
+
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                return url?.let { handleVideoUrl(it, dialog) } ?: false
+            }
+
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                if (url != null && handleVideoUrl(url, dialog)) {
+                    view?.stopLoading()
+                    return
+                }
+                if (!dialogShown) {
+                    dialogShown = true
+                    dialog.show()
+                }
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
                 dialog.setTitle(view?.title ?: "新窗口")
             }
@@ -288,12 +314,34 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.setContentView(newWebView)
-        dialog.show()
 
         // 告诉WebView新窗口已创建
         val transport = resultMsg?.obj as? WebView.WebViewTransport
         transport?.webView = newWebView
         resultMsg?.sendToTarget()
+    }
+
+    private fun handleVideoUrl(url: String, dialog: Dialog): Boolean {
+        if (!isVideoUrl(url)) {
+            return false
+        }
+        if (dialog.isShowing) {
+            dialog.dismiss()
+        }
+        val intent = Intent(this, VideoPlayerActivity::class.java)
+            .putExtra(VideoPlayerActivity.EXTRA_URL, url)
+        startActivity(intent)
+        return true
+    }
+
+    private fun isVideoUrl(url: String): Boolean {
+        val path = runCatching { Uri.parse(url).path ?: "" }.getOrDefault("")
+        val lowerPath = path.lowercase()
+        return lowerPath.endsWith("/api/videostream") ||
+            lowerPath.endsWith(".mp4") ||
+            lowerPath.endsWith(".m4v") ||
+            lowerPath.endsWith(".mov") ||
+            lowerPath.endsWith(".3gp")
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
