@@ -2,8 +2,11 @@ package com.remote.dipgonc
 
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.Toast
@@ -30,6 +33,11 @@ class VideoPlayerActivity : AppCompatActivity() {
     private lateinit var gestureDetector: GestureDetector
     private var selectedRegion = 0
     private var isFiveLayout = false
+    private var controllerVisible = false
+    private val handler = Handler(Looper.getMainLooper())
+    private val showControllerRunnable = Runnable {
+        playerView.showController()
+    }
 
     @OptIn(UnstableApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +52,9 @@ class VideoPlayerActivity : AppCompatActivity() {
         }
 
         playerView = findViewById(R.id.playerView)
+        playerView.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+            controllerVisible = visibility == View.VISIBLE
+        })
         setupGestures()
         player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(VideoCacheManager.dataSourceFactory(this)))
@@ -66,13 +77,31 @@ class VideoPlayerActivity : AppCompatActivity() {
     private fun setupGestures() {
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onDoubleTap(e: MotionEvent): Boolean {
-                val region = hitTestRegion(e.x, e.y)
-                updateVideoRegion(if (region == selectedRegion) 0 else region)
+                handler.removeCallbacks(showControllerRunnable)
+                if (selectedRegion != 0) {
+                    updateVideoRegion(0)
+                } else {
+                    val region = hitTestRegion(e.x, e.y)
+                    if (region > 0) {
+                        updateVideoRegion(region)
+                    }
+                }
+                return true
+            }
+
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                handler.removeCallbacks(showControllerRunnable)
+                if (controllerVisible) {
+                    playerView.hideController()
+                } else {
+                    handler.postDelayed(showControllerRunnable, 120)
+                }
                 return true
             }
         })
         playerView.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
+            true
         }
     }
 
@@ -161,6 +190,7 @@ class VideoPlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        handler.removeCallbacks(showControllerRunnable)
         playerView.player = null
         player?.release()
         player = null
