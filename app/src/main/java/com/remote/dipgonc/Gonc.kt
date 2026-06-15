@@ -15,14 +15,21 @@ class Gonc {
     abstract class CallBack {
         open fun onStart() {}
         open fun onStop() {}
+        open fun onExit(stopRequested: Boolean) {
+            onStop()
+        }
         open fun msg(info: String) {}
         open fun out(info: String) {}
     }
 
     var callBack: CallBack? = null
     private var executableDir: File? = null
+    @Volatile
     private var isRunning = false
+    @Volatile
     private var process: Process? = null
+    @Volatile
+    private var stopRequested = false
 
     fun init(context: Context) {
         executableDir = context.applicationContext.filesDir
@@ -39,6 +46,7 @@ class Gonc {
         }
 
         isRunning = true
+        stopRequested = false
         callBack?.onStart()
 
         Thread {
@@ -48,12 +56,13 @@ class Gonc {
                 e.printStackTrace()
             }
             isRunning = false
-            callBack?.onStop()
+            callBack?.onExit(stopRequested)
         }.start()
     }
 
     fun stop() {
         process?.let { p ->
+            stopRequested = true
             process = null
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 p.destroyForcibly()
@@ -92,9 +101,10 @@ class Gonc {
         try {
             val processBuilder = ProcessBuilder(commandArgs(goncPath, passKey, tunnelMode))
             processBuilder.redirectErrorStream(true)
-            process = processBuilder.start()
+            val currentProcess = processBuilder.start()
+            process = currentProcess
 
-            inputStream = process!!.inputStream
+            inputStream = currentProcess.inputStream
             reader = BufferedReader(InputStreamReader(inputStream))
 
             var line: String?
@@ -105,7 +115,7 @@ class Gonc {
                 updateOutput(line!!, Color.BLUE)
             }
 
-            val exitCode = process!!.waitFor()
+            currentProcess.waitFor()
             msg("VRD已退出")
         } catch (e: InterruptedIOException) {
             // 保持原样

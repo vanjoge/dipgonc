@@ -14,4 +14,24 @@
         app:surface_type="texture_view"
         app:use_controller="true" />
 
+    <com.remote.dipgonc.VideoMetadataOverlayView
+        android:id="@+id/metadataOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <Button
+        android:id="@+id/btnDownload"
+        android:layout_width="wrap_content"
+        android:layout_height="40dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="12dp"
+        android:background="#CC111827"
+        android:minWidth="72dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:text="下载"
+        android:textColor="#FFFFFFFF"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
 </FrameLayout>

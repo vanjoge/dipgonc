@@ -3,6 +3,7 @@ package com.remote.dipgonc
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.core.content.ContextCompat
 
 object P2PManager {
 
@@ -28,8 +29,11 @@ object P2PManager {
 
     // 初始化单例
     fun init(context: Context, callBack: CallBack) {
-        if (isInitialized()) return
         this.callBack = callBack
+        if (isInitialized()) {
+            callBack.onStatusChange(status, "")
+            return
+        }
         this.context = context.applicationContext
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         nowTunnelMode = getTunnelMode()
@@ -55,6 +59,13 @@ object P2PManager {
                     setP2PStatus(P2PStatus.ERROR, "密钥强度过低")
                 } else if (line.contains("no usable NAT types with peer")) {
                     setP2PStatus(P2PStatus.ERROR, "穿透失败")
+                }
+            }
+
+            override fun onExit(stopRequested: Boolean) {
+                if (!stopRequested && (status == P2PStatus.CONNECTING || status == P2PStatus.CONNECTED)) {
+                    setP2PStatus(P2PStatus.DISCONNECTED)
+                    stopKeepAliveService()
                 }
             }
         }
@@ -123,7 +134,10 @@ object P2PManager {
     private fun setP2PStatus(status: P2PStatus, msg: String = "") {
         if (status != this.status) {
             this.status = status
-            callBack.onStatusChange(status, msg)
+            if (::callBack.isInitialized) {
+                callBack.onStatusChange(status, msg)
+            }
+            GoncForegroundService.updateNotification(context, status)
         }
     }
 
@@ -163,6 +177,7 @@ object P2PManager {
         lanWebUrl = null
         setP2PStatus(P2PStatus.CONNECTING)
         gonc.stop()
+        startKeepAliveService()
 
         Thread {
             val lanHost = LanDiscovery.findHttpHost(DIP_HTTP_PORT.toInt())
@@ -178,6 +193,24 @@ object P2PManager {
             }
             gonc.start(context, secretKey, tunnelMode)
         }.start()
+    }
+
+    fun stopByUser() {
+        lanWebUrl = null
+        gonc.stop()
+        setP2PStatus(P2PStatus.DISCONNECTED)
+        stopKeepAliveService()
+    }
+
+    private fun startKeepAliveService() {
+        if (!::context.isInitialized) return
+        val intent = GoncForegroundService.startIntent(context)
+        ContextCompat.startForegroundService(context, intent)
+    }
+
+    private fun stopKeepAliveService() {
+        if (!::context.isInitialized) return
+        context.stopService(GoncForegroundService.intent(context))
     }
 
     // 检查是否已初始化

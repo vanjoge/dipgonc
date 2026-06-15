@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var btnSettings: Button
     private lateinit var btnRefresh: Button
+    private val videoMetadataBridge = VideoMetadataBridge()
     private var flag: Boolean = true;
 
     private var isStatusExpanded = true
@@ -182,6 +183,7 @@ class MainActivity : AppCompatActivity() {
         webView.settings.loadWithOverviewMode = true // 缩放页面使其适合 WebView 的宽度
         // 启用缓存
         webView.settings.cacheMode = WebSettings.LOAD_DEFAULT
+        webView.addJavascriptInterface(videoMetadataBridge, "DipGoncVideo")
         // 设置 WebChromeClient 处理新窗口
         webView.webChromeClient = object : WebChromeClient() {
             override fun onCreateWindow(
@@ -277,6 +279,7 @@ class MainActivity : AppCompatActivity() {
         newWebView.settings.domStorageEnabled = true
         newWebView.settings.setSupportMultipleWindows(true)
         newWebView.settings.javaScriptCanOpenWindowsAutomatically = true
+        newWebView.addJavascriptInterface(videoMetadataBridge, "DipGoncVideo")
 
         newWebView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(
@@ -339,6 +342,7 @@ class MainActivity : AppCompatActivity() {
         val lowerPath = path.lowercase()
         return lowerPath.endsWith("/api/videostream") ||
             lowerPath.endsWith(".mp4") ||
+            lowerPath.endsWith(".flv") ||
             lowerPath.endsWith(".m4v") ||
             lowerPath.endsWith(".mov") ||
             lowerPath.endsWith(".3gp")
