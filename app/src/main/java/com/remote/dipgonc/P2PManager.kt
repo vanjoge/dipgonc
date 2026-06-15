@@ -131,6 +131,15 @@ object P2PManager {
         }
     }
 
+    fun getConnectionTypeText(): String {
+        if (status != P2PStatus.CONNECTED) return ""
+        return if (lanWebUrl != null) {
+            "直连"
+        } else {
+            "穿透"
+        }
+    }
+
     private fun setP2PStatus(status: P2PStatus, msg: String = "") {
         if (status != this.status) {
             this.status = status
@@ -180,17 +189,18 @@ object P2PManager {
         startKeepAliveService()
 
         Thread {
-            val lanHost = LanDiscovery.findHttpHost(DIP_HTTP_PORT.toInt())
+            if (secretKey.isEmpty()) {
+                setP2PStatus(P2PStatus.ERROR, "请先输入密钥")
+                return@Thread
+            }
+
+            val lanHost = LanDiscovery.findHttpHost(DIP_HTTP_PORT.toInt(), secretKey)
             if (lanHost != null) {
                 lanWebUrl = "http://$lanHost:$DIP_HTTP_PORT"
                 setP2PStatus(P2PStatus.CONNECTED)
                 return@Thread
             }
 
-            if (secretKey.isEmpty()) {
-                setP2PStatus(P2PStatus.ERROR, "请先输入密钥")
-                return@Thread
-            }
             gonc.start(context, secretKey, tunnelMode)
         }.start()
     }

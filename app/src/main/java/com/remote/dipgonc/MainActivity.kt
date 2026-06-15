@@ -211,11 +211,17 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val statusText = when (status) {
+        val baseStatusText = when (status) {
             P2PManager.P2PStatus.CONNECTED -> "已连接 ✓"
             P2PManager.P2PStatus.CONNECTING -> "连接中..."
             P2PManager.P2PStatus.DISCONNECTED -> "未连接 ✗"
             P2PManager.P2PStatus.ERROR -> "错误 ⚠ " + msg
+        }
+        val connectionType = P2PManager.getConnectionTypeText()
+        val statusText = if (connectionType.isNotEmpty()) {
+            "$baseStatusText（$connectionType）"
+        } else {
+            baseStatusText
         }
 
         val statusColor = when (status) {

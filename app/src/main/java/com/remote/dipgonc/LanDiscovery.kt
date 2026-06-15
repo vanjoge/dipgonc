@@ -1,9 +1,12 @@
 package com.remote.dipgonc
 
+import org.json.JSONObject
 import java.net.Inet4Address
 import java.net.InetSocketAddress
+import java.net.HttpURLConnection
 import java.net.NetworkInterface
 import java.net.Socket
+import java.net.URL
 import java.util.Collections
 import java.util.concurrent.Callable
 import java.util.concurrent.CompletionService
@@ -14,10 +17,12 @@ import java.util.concurrent.TimeUnit
 object LanDiscovery {
 
     private const val CONNECT_TIMEOUT_MS = 120
+    private const val VERIFY_TIMEOUT_MS = 350
     private const val SCAN_TIMEOUT_MS = 1800
     private const val WORKERS = 64
 
-    fun findHttpHost(port: Int): String? {
+    fun findHttpHost(port: Int, expectedGoncKey: String): String? {
+        if (expectedGoncKey.isBlank()) return null
         val candidates = buildCandidates()
         if (candidates.isEmpty()) return null
 
@@ -26,7 +31,11 @@ object LanDiscovery {
         try {
             candidates.forEach { host ->
                 completion.submit(Callable<String?> {
-                    if (isPortOpen(host, port)) host else null
+                    if (isPortOpen(host, port) && isExpectedDipService(host, port, expectedGoncKey)) {
+                        host
+                    } else {
+                        null
+                    }
                 })
             }
 
@@ -89,6 +98,26 @@ object LanDiscovery {
             }
         } catch (_: Throwable) {
             false
+        }
+    }
+
+    private fun isExpectedDipService(host: String, port: Int, expectedGoncKey: String): Boolean {
+        val connection = try {
+            URL("http://$host:$port/api/getConf?keys=GoncKey").openConnection() as HttpURLConnection
+        } catch (_: Throwable) {
+            return false
+        }
+        return try {
+            connection.connectTimeout = VERIFY_TIMEOUT_MS
+            connection.readTimeout = VERIFY_TIMEOUT_MS
+            connection.requestMethod = "GET"
+            if (connection.responseCode !in 200..299) return false
+            val body = connection.inputStream.bufferedReader().use { it.readText() }
+            JSONObject(body).optString("GoncKey") == expectedGoncKey
+        } catch (_: Throwable) {
+            false
+        } finally {
+            connection.disconnect()
         }
     }
 }
